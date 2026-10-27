@@ -37,6 +37,8 @@ export const importSchema = z.object({
       .nullish()
       .transform((v) => v ?? undefined),
     tastingNotes: z.array(z.string()).nullish().transform((v) => v ?? []),
+    /** peso neto de la bolsa; solo se usa al crear el café */
+    bagGrams: z.number().positive().nullish().transform((v) => v ?? undefined),
   }),
   recipe: z.object({
     name: z.string().min(1),

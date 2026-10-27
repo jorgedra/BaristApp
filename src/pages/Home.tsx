@@ -2,19 +2,26 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../lib/db';
-import { METHOD_LABELS, type Coffee, type Recipe } from '../lib/types';
+import { METHOD_LABELS, type Brew, type Coffee, type Recipe } from '../lib/types';
 import { daysSince } from '../lib/time';
+import { remainingGrams, usualDose } from '../lib/stock';
+import { PhotoThumb } from '../components/Fields';
+import { StockLabel } from '../components/StockBits';
 
-function CoffeeCard({ c, recipes }: { c: Coffee; recipes: Recipe[] }) {
+function CoffeeCard({ c, recipes, brews }: { c: Coffee; recipes: Recipe[]; brews: Brew[] }) {
   const refs = recipes.filter((r) => r.isReference);
   const days = c.roastDate ? daysSince(c.roastDate) : null;
   return (
     <div className="card">
-      <Link to={`/cafe/${c.id}`} style={{ color: 'inherit' }}>
-        <h3>{c.name}</h3>
-        <div className="small muted">
-          {[c.roaster, c.origin, c.process].filter(Boolean).join(' · ')}
-          {days !== null && ` · ${days} días desde tueste`}
+      <Link to={`/cafe/${c.id}`} className="item" style={{ color: 'inherit' }}>
+        <PhotoThumb photoId={c.photoId} />
+        <div className="grow">
+          <h3>{c.name}</h3>
+          <div className="small muted">
+            {[c.roaster, c.origin, c.process].filter(Boolean).join(' · ')}
+            {days !== null && ` · ${days} días desde tueste`}
+          </div>
+          <div className="small"><StockLabel remaining={remainingGrams(c, brews)} dose={usualDose(recipes)} /></div>
         </div>
       </Link>
       <div className="chips">
@@ -30,16 +37,25 @@ function CoffeeCard({ c, recipes }: { c: Coffee; recipes: Recipe[] }) {
 export default function Home() {
   const coffees = useLiveQuery(() => db.coffees.orderBy('createdAt').reverse().toArray());
   const recipes = useLiveQuery(() => db.recipes.toArray());
+  const brews = useLiveQuery(() => db.brews.toArray());
   const [showOld, setShowOld] = useState(false);
-  if (!coffees || !recipes) return null;
+  if (!coffees || !recipes || !brews) return null;
 
   const active = coffees.filter((c) => c.inStock);
   const old = coffees.filter((c) => !c.inStock);
-  const of = (c: Coffee) => recipes.filter((r) => r.coffeeId === c.id);
+  const card = (c: Coffee) => (
+    <CoffeeCard key={c.id} c={c} recipes={recipes.filter((r) => r.coffeeId === c.id)} brews={brews.filter((b) => b.coffeeId === c.id)} />
+  );
 
   return (
     <>
-      <h1>Mis cafés</h1>
+      <div className="page-head">
+        <h1>Mis cafés</h1>
+        <div className="row">
+          <Link to="/cafe/nuevo" className="btn">＋ Café</Link>
+          <Link to="/importar" className="btn primary">＋ Importar</Link>
+        </div>
+      </div>
       {coffees.length === 0 && (
         <div className="empty">
           <p>Aún no hay recetas guardadas.</p>
@@ -47,13 +63,13 @@ export default function Home() {
           <Link to="/importar" className="btn primary">Importar receta</Link>
         </div>
       )}
-      {active.map((c) => <CoffeeCard key={c.id} c={c} recipes={of(c)} />)}
+      {active.map(card)}
       {old.length > 0 && (
         <>
           <button type="button" className="block" onClick={() => setShowOld(!showOld)}>
             {showOld ? 'Ocultar' : 'Ver'} cafés sin existencias ({old.length})
           </button>
-          {showOld && <div style={{ marginTop: 12 }}>{old.map((c) => <CoffeeCard key={c.id} c={c} recipes={of(c)} />)}</div>}
+          {showOld && <div style={{ marginTop: 12 }}>{old.map(card)}</div>}
         </>
       )}
     </>
