@@ -1,11 +1,12 @@
 import type { ImportPayload } from './schema';
 import { METHOD_LABELS, type Brew, type Coffee, type Recipe, type Step } from './types';
 import { daysSince, formatNum, formatRatio, formatTime } from './time';
+import { remainingGrams } from './stock';
 
 const line = (label: string, value: unknown) =>
   value === undefined || value === null || value === '' ? [] : [`- ${label}: ${value}`];
 
-export function coffeeText(c: Coffee, now = new Date()): string {
+export function coffeeText(c: Coffee, now = new Date(), remaining?: number): string {
   const days = c.roastDate ? daysSince(c.roastDate, now) : null;
   return [
     `### ${c.name}${c.roaster ? ` (${c.roaster})` : ''}`,
@@ -16,6 +17,7 @@ export function coffeeText(c: Coffee, now = new Date()): string {
     ...line('Fecha de tueste', c.roastDate && `${c.roastDate}${days !== null ? ` (${days} días)` : ''}`),
     ...line('Notas del tostador', c.tastingNotes?.join(', ')),
     ...line('Notas', c.notes),
+    ...line('Existencias', remaining !== undefined ? `≈ ${formatNum(Math.max(0, remaining))} g` : undefined),
     ...(c.inStock ? [] : ['- Sin existencias']),
   ].join('\n');
 }
@@ -87,7 +89,7 @@ export function coffeeSummary(c: Coffee, recipes: Recipe[], brews: Brew[], maxBr
   const recent = [...brews].sort((a, b) => b.date.localeCompare(a.date)).slice(0, maxBrews);
   const ordered = [...recipes].sort((a, b) => Number(b.isReference) - Number(a.isReference));
   return [
-    coffeeText(c),
+    coffeeText(c, new Date(), remainingGrams(c, brews)),
     '',
     ordered.length ? ordered.map(recipeText).join('\n\n') : '_Sin recetas._',
     '',

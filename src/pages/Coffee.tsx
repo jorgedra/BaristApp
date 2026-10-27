@@ -2,52 +2,15 @@ import { useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db, deleteCoffee } from '../lib/db';
-import { METHOD_LABELS, type Coffee } from '../lib/types';
+import { METHOD_LABELS } from '../lib/types';
+import { CoffeeForm } from '../components/CoffeeForm';
+import { LinkButton, PhotoView, replacePhoto } from '../components/Fields';
+import { StockCard } from '../components/StockBits';
+import { remainingGrams, usualDose } from '../lib/stock';
 import { coffeeSummary } from '../lib/summary';
 import { daysSince, formatDate, formatNum, formatRatio } from '../lib/time';
 import { ShareText } from '../components/ShareText';
 import { BrewRow } from './History';
-
-const FIELDS: [keyof Coffee, string][] = [
-  ['name', 'Nombre'],
-  ['roaster', 'Tostador'],
-  ['origin', 'País'],
-  ['region', 'Región'],
-  ['variety', 'Variedad'],
-  ['process', 'Proceso'],
-  ['roastLevel', 'Tueste'],
-  ['roastDate', 'Fecha de tueste'],
-];
-
-function CoffeeForm({ c, onDone }: { c: Coffee; onDone: () => void }) {
-  const [draft, setDraft] = useState({ ...c, tastingNotesText: (c.tastingNotes ?? []).join(', ') });
-  const set = (k: string, v: string) => setDraft((d) => ({ ...d, [k]: v }));
-  async function save() {
-    const { tastingNotesText, id, ...rest } = draft;
-    const clean = Object.fromEntries(Object.entries(rest).map(([k, v]) => [k, typeof v === 'string' ? v.trim() || undefined : v]));
-    await db.coffees.update(id!, {
-      ...clean,
-      name: draft.name.trim() || c.name,
-      tastingNotes: tastingNotesText.split(',').map((s) => s.trim()).filter(Boolean),
-    });
-    onDone();
-  }
-  return (
-    <div className="card">
-      <div className="grid2">
-        {FIELDS.map(([k, label]) => (
-          <label key={k}>
-            {label}
-            <input type={k === 'roastDate' ? 'date' : 'text'} value={(draft[k] as string) ?? ''} onChange={(e) => set(k, e.target.value)} />
-          </label>
-        ))}
-      </div>
-      <label>Notas del tostador (separadas por comas)<input value={draft.tastingNotesText} onChange={(e) => set('tastingNotesText', e.target.value)} /></label>
-      <label>Notas propias<textarea value={draft.notes ?? ''} onChange={(e) => set('notes', e.target.value)} /></label>
-      <div className="row"><button type="button" className="primary" onClick={save}>Guardar</button><button type="button" onClick={onDone}>Cancelar</button></div>
-    </div>
-  );
-}
 
 export default function CoffeePage() {
   const id = Number(useParams().id) || -1; // -1: clave válida que nunca existe (NaN rompe IndexedDB)
@@ -56,6 +19,11 @@ export default function CoffeePage() {
   const coffee = useLiveQuery(async () => (await db.coffees.get(id)) ?? null, [id]);
   const recipes = useLiveQuery(() => db.recipes.where('coffeeId').equals(id).toArray(), [id]);
   const brews = useLiveQuery(() => db.brews.where('coffeeId').equals(id).reverse().sortBy('date'), [id]);
+  const roasterSite = useLiveQuery(async () => {
+    const roaster = coffee?.roaster?.trim().toLowerCase();
+    if (!roaster) return null;
+    return (await db.sites.filter((s) => s.name.trim().toLowerCase() === roaster).first()) ?? null;
+  }, [coffee?.roaster]);
 
   if (coffee === undefined || !recipes || !brews) return null;
   if (coffee === null) return <p className="empty">Café no encontrado.</p>;
@@ -66,9 +34,19 @@ export default function CoffeePage() {
     <>
       <h1>{coffee.name}</h1>
       {editing ? (
-        <CoffeeForm c={coffee} onDone={() => setEditing(false)} />
+        <CoffeeForm
+          initial={coffee}
+          onCancel={() => setEditing(false)}
+          onSave={async (fields) => {
+            await replacePhoto(coffee.photoId, fields.photoId);
+            // Dexie borra las claves con valor undefined (p. ej. photoId al quitar la foto)
+            await db.coffees.update(id, { ...fields, name: fields.name || coffee.name });
+            setEditing(false);
+          }}
+        />
       ) : (
         <div className="card stack">
+          <PhotoView photoId={coffee.photoId} />
           <div className="small">
             {coffee.roaster && <div><span className="muted">Tostador:</span> {coffee.roaster}</div>}
             {(coffee.origin || coffee.region) && <div><span className="muted">Origen:</span> {[coffee.origin, coffee.region].filter(Boolean).join(', ')}</div>}
@@ -84,9 +62,13 @@ export default function CoffeePage() {
             <button type="button" onClick={() => db.coffees.update(id, { inStock: !coffee.inStock })}>
               {coffee.inStock ? 'Marcar sin existencias' : 'Marcar con existencias'}
             </button>
+            {roasterSite && <LinkButton url={roasterSite.url} label="Comprar de nuevo" />}
           </div>
         </div>
       )}
+
+      <h2>Existencias</h2>
+      <StockCard coffee={coffee} remaining={remainingGrams(coffee, brews)} dose={usualDose(recipes)} />
 
       <h2>Recetas</h2>
       {recipes.length === 0 && <p className="muted small">Sin recetas.</p>}

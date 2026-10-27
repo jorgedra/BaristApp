@@ -14,6 +14,13 @@ Sin backend ni IA: los datos viven en el navegador (IndexedDB) y funciona sin co
 6. Marca la que funcione como **★ referencia** (una por café y método).
 7. Para cambiar de conversación: **Copiar resumen** del café o el **resumen global** en Ajustes.
 
+## Más funciones
+
+- **Existencias**: cada café puede llevar los gramos que quedan. Se calculan restando las preparaciones registradas desde el último ajuste (editar o borrar una preparación lo corrige solo). «Ajustar» tras pesar la bolsa, «Añadir bolsa» al reponer; al llegar a 0 g el café pasa a «sin existencias». Si el LLM incluye `bagGrams` al importar un café nuevo, se usa como existencias iniciales.
+- **Compras → Lista de deseos**: cafés, accesorios, equipo y otros, con etiquetas, enlace, precio, prioridad, tienda, foto y estado. Un café marcado como comprado abre el alta del café con los datos rellenados.
+- **Compras → Tiendas**: tostadores y tiendas favoritos con enlace, tipo y etiquetas. Si el nombre coincide con el tostador de un café, su ficha muestra «Comprar de nuevo».
+- **Fotos**: en cafés y en la lista de deseos; se comprimen en el móvil (≈1280 px, JPEG). En Ajustes se pueden desactivar al momento (se conservan, pero no se cargan ni se piden), borrar todas, y descargar la copia de seguridad con o sin fotos.
+
 ## Instalar en el móvil
 
 Abre la URL publicada y usa «Añadir a pantalla de inicio» (Safari) o «Instalar app» (Chrome). Instalada, el navegador conserva mejor los datos; aun así, descarga una copia de seguridad de vez en cuando desde Ajustes.

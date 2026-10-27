@@ -3,7 +3,8 @@ import { Link, useNavigate, useParams, useSearchParams } from 'react-router-dom'
 import { useLiveQuery } from 'dexie-react-hooks';
 import { db } from '../lib/db';
 import type { Brew } from '../lib/types';
-import { formatTime, parseTime } from '../lib/time';
+import { formatNum, formatTime, parseTime } from '../lib/time';
+import { remainingGrams, syncStockFlag } from '../lib/stock';
 import { brewReport } from '../lib/summary';
 import { ShareText } from '../components/ShareText';
 
@@ -41,6 +42,7 @@ export default function BrewLog() {
   const recipeId = brew ? brew.recipeId : brewId === undefined ? Number(params.id) : NaN;
   const recipe = useLiveQuery(async () => (Number.isFinite(recipeId) ? db.recipes.get(recipeId) : undefined), [recipeId]);
   const coffee = useLiveQuery(async () => (recipe ? db.coffees.get(recipe.coffeeId) : undefined), [recipe]);
+  const coffeeBrews = useLiveQuery(async () => (recipe ? db.brews.where('coffeeId').equals(recipe.coffeeId).toArray() : undefined), [recipe]);
   const [draft, setDraft] = useState<Draft | null>(null);
   const [saved, setSaved] = useState(false);
 
@@ -54,7 +56,7 @@ export default function BrewLog() {
     }
   }, [brew, recipe, draft, search]);
 
-  if (!recipe || !coffee || !draft) return null;
+  if (!recipe || !coffee || !draft || !coffeeBrews) return null;
   const set = <K extends keyof Draft>(k: K, v: Draft[K]) => setDraft({ ...draft, [k]: v });
 
   const current: Brew = {
@@ -74,14 +76,21 @@ export default function BrewLog() {
     notes: draft.notes.trim() || undefined,
   };
 
+  // Lo que había sin contar esta preparación, y lo que queda después de ella
+  const before = remainingGrams(coffee, coffeeBrews, brewId);
+  const after = before === undefined ? undefined : Math.round((before - current.coffeeGrams) * 10) / 10;
+
   async function save() {
     if (brewId !== undefined) {
       await db.brews.put(current);
+      await syncStockFlag(db, current.coffeeId);
       setSaved(true);
       setTimeout(() => setSaved(false), 1500);
     } else {
       const { id: _omit, ...rest } = current;
-      const newId = await db.brews.add(rest);
+      // Fecha del momento de guardar: debe ser posterior a un ajuste de existencias hecho mientras tanto
+      const newId = await db.brews.add({ ...rest, date: new Date().toISOString() });
+      await syncStockFlag(db, current.coffeeId);
       navigate(`/preparacion/${newId}`, { replace: true });
     }
   }
@@ -108,6 +117,13 @@ export default function BrewLog() {
           {field('waterTempC', 'Temperatura (°C)')}
         </div>
         <label>Tiempo final (m:ss)<input inputMode="numeric" value={draft.finalTime} placeholder="2:45" onChange={(e) => set('finalTime', e.target.value)} /></label>
+        {before !== undefined && after !== undefined && (
+          <div className={`msg ${after < 0 ? 'warn' : 'ok'}`}>
+            {after < 0
+              ? `Solo quedaban ≈ ${formatNum(before)} g: faltan ${formatNum(-after)} g. Si las existencias no cuadran, ajústalas en la ficha del café.`
+              : `Existencias: ${formatNum(before)} g → quedarán ${formatNum(after)} g.`}
+          </div>
+        )}
         <label>Variable cambiada respecto a la receta<input value={draft.change} placeholder="p. ej. molienda 75 → 72 clics" onChange={(e) => set('change', e.target.value)} /></label>
       </div>
 
@@ -137,6 +153,7 @@ export default function BrewLog() {
             onClick={async () => {
               if (confirm('¿Borrar esta preparación?')) {
                 await db.brews.delete(brewId);
+                await syncStockFlag(db, recipe.coffeeId);
                 navigate(`/receta/${recipe.id}`, { replace: true });
               }
             }}

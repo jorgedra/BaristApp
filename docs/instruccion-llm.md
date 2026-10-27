@@ -14,7 +14,8 @@ Guardo mis recetas en una app propia (BaristApp). Cada vez que me des una receta
     "process": "Anaeróbico 72 h + lavado",
     "roastLevel": "Claro",
     "roastDate": "2026-10-01",
-    "tastingNotes": ["papaya", "panela"]
+    "tastingNotes": ["papaya", "panela"],
+    "bagGrams": 250
   },
   "recipe": {
     "name": "V60 13,7 g · 1:14",
@@ -49,6 +50,7 @@ Reglas del bloque:
 - `addGrams` es el agua añadida en ese paso y `totalGrams` el acumulado en la báscula al terminarlo. Omítelos en pasos sin agua.
 - Gramos y grados como números, sin unidades. Usa `null` para los datos que no conozcas: no los inventes.
 - `roastDate` en formato YYYY-MM-DD o `null`.
+- `bagGrams`: peso neto de la bolsa en gramos si lo conoces (por ejemplo, de la foto); si no, `null`.
 - Usa siempre el mismo `name` y `roaster` para el mismo café, para que la app lo agrupe.
 - El ejemplo solo ilustra el formato; no reutilices sus valores.
 - No pongas comentarios dentro del JSON.
