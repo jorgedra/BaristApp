@@ -15,7 +15,7 @@ export function BrewRow({ b, r, coffeeName }: { b: Brew; r?: Recipe; coffeeName?
         <div><b>{coffeeName}</b>{coffeeName && r && ' · '}{r && <span className="small">{r.name} ({METHOD_LABELS[r.method]})</span>}</div>
       )}
       <div className="small muted">
-        {[b.grindClicks !== undefined && `${b.grindClicks} clics`, b.waterTempC !== undefined && `${b.waterTempC} °C`, b.finalTime !== undefined && formatTime(b.finalTime), b.change && `cambio: ${b.change}`]
+        {[b.grindClicks !== undefined && `${b.grindClicks} clics`, b.waterTempC !== undefined && `${b.waterTempC} °C`, b.finalTime !== undefined && formatTime(b.finalTime), b.water && `💧 ${b.water}`, b.change && `cambio: ${b.change}`]
           .filter(Boolean)
           .join(' · ')}
       </div>

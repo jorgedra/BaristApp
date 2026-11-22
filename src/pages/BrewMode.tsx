@@ -5,6 +5,7 @@ import { db } from '../lib/db';
 import { timerState } from '../lib/brewTimer';
 import { formatTime } from '../lib/time';
 import { RecipeParams, StepDetail, StepList } from '../components/RecipeBits';
+import { WaterInfo } from '../components/WaterBits';
 
 /** Pitido corto con WebAudio (no requiere archivos). */
 function useBeep() {
@@ -89,6 +90,7 @@ export default function BrewMode() {
         <h1>{recipe.name}</h1>
         <RecipeParams r={recipe} />
         {recipe.filter && <p className="small muted">Filtro: {recipe.filter}</p>}
+        {recipe.water && <div className="card"><WaterInfo water={recipe.water} /></div>}
         <p className="small muted">Prepara el café molido, el agua a temperatura y la báscula a cero. El cronómetro empieza con el primer paso.</p>
         <label className="row" style={{ justifyContent: 'center' }}>
           <input type="checkbox" checked={sound} onChange={(e) => setSound(e.target.checked)} style={{ width: 'auto', margin: 0 }} /> Avisos sonoros

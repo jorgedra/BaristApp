@@ -7,8 +7,9 @@ import { formatNum, formatTime, parseTime } from '../lib/time';
 import { remainingGrams, syncStockFlag } from '../lib/stock';
 import { brewReport } from '../lib/summary';
 import { ShareText } from '../components/ShareText';
+import { WaterNameInput } from '../components/WaterBits';
 
-type Draft = Record<'coffeeGrams' | 'waterGrams' | 'grindClicks' | 'waterTempC' | 'finalTime' | 'taste' | 'problems' | 'change' | 'notes', string> & { rating: number };
+type Draft = Record<'coffeeGrams' | 'waterGrams' | 'grindClicks' | 'waterTempC' | 'water' | 'finalTime' | 'taste' | 'problems' | 'change' | 'notes', string> & { rating: number };
 
 const num = (s: string) => {
   const n = Number(s.replace(',', '.'));
@@ -18,6 +19,7 @@ const str = (v?: number) => (v === undefined ? '' : String(v));
 
 function toDraft(b: Partial<Brew>): Draft {
   return {
+    water: b.water ?? '',
     coffeeGrams: str(b.coffeeGrams),
     waterGrams: str(b.waterGrams),
     grindClicks: str(b.grindClicks),
@@ -52,7 +54,7 @@ export default function BrewLog() {
     if (brew) setDraft(toDraft(brew));
     else {
       const t = search.get('t');
-      setDraft(toDraft({ ...recipe, id: undefined, notes: undefined, finalTime: t ? Number(t) : undefined }));
+      setDraft(toDraft({ ...recipe, id: undefined, notes: undefined, water: recipe.water?.name, finalTime: t ? Number(t) : undefined }));
     }
   }, [brew, recipe, draft, search]);
 
@@ -68,6 +70,7 @@ export default function BrewLog() {
     waterGrams: num(draft.waterGrams) ?? recipe.waterGrams,
     grindClicks: num(draft.grindClicks),
     waterTempC: num(draft.waterTempC),
+    water: draft.water.trim() || undefined,
     finalTime: parseTime(draft.finalTime) ?? undefined,
     rating: draft.rating || undefined,
     taste: draft.taste.trim() || undefined,
@@ -116,6 +119,7 @@ export default function BrewLog() {
           {field('grindClicks', 'Molienda (clics K6)')}
           {field('waterTempC', 'Temperatura (°C)')}
         </div>
+        <WaterNameInput label="Agua usada" value={draft.water} onChange={(v) => set('water', v)} />
         <label>Tiempo final (m:ss)<input inputMode="numeric" value={draft.finalTime} placeholder="2:45" onChange={(e) => set('finalTime', e.target.value)} /></label>
         {before !== undefined && after !== undefined && (
           <div className={`msg ${after < 0 ? 'warn' : 'ok'}`}>

@@ -61,6 +61,20 @@ export interface Step {
   instruction: string;
 }
 
+/** Agua de la receta. Los valores minerales solo si se conocen (etiqueta o medición). */
+export interface Water {
+  /** marca, «grifo filtrado», mezcla… */
+  name: string;
+  /** residuo seco o TDS, mg/L (ppm) */
+  tds?: number;
+  /** dureza total, ppm como CaCO3 */
+  gh?: number;
+  /** alcalinidad, ppm como CaCO3 */
+  kh?: number;
+  /** p. ej. «mezcla 1:1 con destilada», «sin hervir dos veces» */
+  notes?: string;
+}
+
 export interface Adjustment {
   when: string;
   then: string;
@@ -77,6 +91,7 @@ export interface Recipe {
   waterTempC?: number;
   filter?: string;
   accessories?: string;
+  water?: Water;
   targetTimeMin?: number;
   targetTimeMax?: number;
   steps: Step[];
@@ -98,6 +113,8 @@ export interface Brew {
   waterGrams: number;
   grindClicks?: number;
   waterTempC?: number;
+  /** nombre del agua usada, si difiere de la receta se ve como desviación */
+  water?: string;
   finalTime?: number;
   /** 1–5 */
   rating?: number;
