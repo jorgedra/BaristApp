@@ -21,6 +21,21 @@ const optText = z
 
 const optNum = z.number().nonnegative().nullish().transform((v) => v ?? undefined);
 
+/** Acepta un objeto o, si el LLM simplifica, solo el nombre como texto. */
+const water = z
+  .union([
+    z.string().min(1).transform((name) => ({ name: name.trim() })),
+    z.object({
+      name: z.string().min(1, 'El agua necesita nombre'),
+      tds: optNum,
+      gh: optNum,
+      kh: optNum,
+      notes: optText,
+    }),
+  ])
+  .nullish()
+  .transform((v) => v ?? undefined);
+
 export const importSchema = z.object({
   baristapp: z.literal(1),
   coffee: z.object({
@@ -49,6 +64,7 @@ export const importSchema = z.object({
     waterTempC: optNum,
     filter: optText,
     accessories: optText,
+    water,
     targetTime: z
       .object({ min: time, max: time })
       .nullish()

@@ -8,7 +8,7 @@ export function RecipeParams({ r }: { r: Recipe }) {
       <div className="param"><b>{formatNum(r.waterGrams)} g</b><small>agua</small></div>
       <div className="param"><b>{formatRatio(r.coffeeGrams, r.waterGrams)}</b><small>ratio</small></div>
       <div className="param"><b>{r.grindClicks ?? '—'}</b><small>clics K6</small></div>
-      <div className="param"><b>{r.waterTempC !== undefined ? `${r.waterTempC} °C` : '—'}</b><small>agua</small></div>
+      <div className="param"><b>{r.waterTempC !== undefined ? `${r.waterTempC} °C` : '—'}</b><small>temperatura</small></div>
       <div className="param">
         <b>{r.targetTimeMin !== undefined && r.targetTimeMax !== undefined ? `${formatTime(r.targetTimeMin)}–${formatTime(r.targetTimeMax)}` : '—'}</b>
         <small>objetivo</small>

@@ -6,7 +6,7 @@ import { exampleJson } from './prompt';
 import { timerState } from './brewTimer';
 import { BaristaDB, deleteAllPhotos, exportBackup, restoreBackup, saveImport, setReference } from './db';
 import { addBag, adjustStock, clearStock, cupsLeft, remainingGrams, syncStockFlag, usualDose } from './stock';
-import { brewReport, payloadToJson, toImportPayload } from './summary';
+import { brewReport, payloadToJson, recipeText, toImportPayload } from './summary';
 import type { ImportPayload } from './schema';
 
 const example = () => {
@@ -237,5 +237,44 @@ describe('copia de seguridad v2 y fotos', () => {
     expect(await db.photos.count()).toBe(0);
     expect((await db.coffees.toArray()).every((c) => !('photoId' in c))).toBe(true);
     expect((await db.wishlist.toArray()).every((w) => !('photoId' in w))).toBe(true);
+  });
+});
+
+describe('agua', () => {
+  it('importa el agua como objeto o como texto, sin inventar minerales', () => {
+    const r = example();
+    expect(r.data.recipe.water).toEqual({ name: 'Fuente Dehesa', tds: undefined, gh: undefined, kh: undefined, notes: 'Mineralización débil; sin mezclar' });
+
+    const j = JSON.parse(exampleJson());
+    j.recipe.water = 'Grifo filtrado';
+    const s = parseImport(JSON.stringify(j));
+    expect(s.ok && s.data.recipe.water).toEqual({ name: 'Grifo filtrado' });
+
+    j.recipe.water = { name: 'Mezcla', tds: 45, gh: 30, kh: 20, notes: null };
+    const o = parseImport(JSON.stringify(j));
+    expect(o.ok && o.data.recipe.water).toMatchObject({ name: 'Mezcla', tds: 45, gh: 30, kh: 20 });
+
+    delete j.recipe.water;
+    const n = parseImport(JSON.stringify(j));
+    expect(n.ok && n.data.recipe.water).toBeUndefined();
+
+    j.recipe.water = { name: '' };
+    expect(parseImport(JSON.stringify(j)).ok).toBe(false);
+  });
+
+  it('el agua aparece en el texto de la receta, se reexporta y se marca como desviación', async () => {
+    const db = new BaristaDB(`test-${Math.random()}`);
+    const { coffeeId, recipeId } = await saveImport(db, example().data);
+    await db.recipes.update(recipeId, { water: { name: 'Fuente Dehesa', tds: 50.5 } });
+    const c = (await db.coffees.get(coffeeId))!;
+    const r = (await db.recipes.get(recipeId))!;
+    expect(recipeText(r)).toMatch(/- Agua: Fuente Dehesa \(TDS 50,5 mg\/L\)/);
+
+    const again = parseImport(payloadToJson(toImportPayload(c, r)));
+    expect(again.ok && again.data.recipe.water).toMatchObject({ name: 'Fuente Dehesa', tds: 50.5 });
+
+    const base = { recipeId, coffeeId, date: '2026-11-22T08:00:00Z', coffeeGrams: r.coffeeGrams, waterGrams: r.waterGrams, grindClicks: r.grindClicks, waterTempC: r.waterTempC };
+    expect(brewReport({ ...base, water: 'Fuente Dehesa' }, r, c)).not.toMatch(/Desviaciones/);
+    expect(brewReport({ ...base, water: 'Bezoya' }, r, c)).toMatch(/Desviaciones: agua Bezoya \(receta Fuente Dehesa\)/);
   });
 });

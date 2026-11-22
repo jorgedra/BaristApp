@@ -25,3 +25,14 @@ export function usePhotoUrl(photoId: number | undefined, variant: 'data' | 'thum
 export function useAllTags(table: 'wishlist' | 'sites'): string[] {
   return useLiveQuery(async () => (await db[table].orderBy('tags').uniqueKeys()) as string[], [table]) ?? [];
 }
+
+/** Nombres de agua ya usados en recetas y preparaciones, para autocompletar. */
+export function useKnownWaters(): string[] {
+  return (
+    useLiveQuery(async () => {
+      const [recipes, brews] = await Promise.all([db.recipes.toArray(), db.brews.toArray()]);
+      const names = [...recipes.map((r) => r.water?.name), ...brews.map((b) => b.water)];
+      return [...new Set(names.filter((n): n is string => !!n))].sort((a, b) => a.localeCompare(b, 'es'));
+    }) ?? []
+  );
+}

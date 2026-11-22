@@ -5,6 +5,7 @@ import { db, saveImport, updateRecipe } from '../lib/db';
 import { parseImport } from '../lib/importer';
 import { METHOD_LABELS } from '../lib/types';
 import { RecipeParams, StepList } from '../components/RecipeBits';
+import { WaterInfo } from '../components/WaterBits';
 import { exampleJson } from '../lib/prompt';
 import type { Recipe } from '../lib/types';
 
@@ -112,6 +113,7 @@ export default function ImportPage() {
             <h3>{data.recipe.name}</h3>
             <div className="chips"><span className="chip">{METHOD_LABELS[data.recipe.method]}</span>{data.recipe.filter && <span className="chip">{data.recipe.filter}</span>}</div>
             <RecipeParams r={preview} />
+            {data.recipe.water ? <div style={{ margin: '8px 0' }}><WaterInfo water={data.recipe.water} /></div> : <p className="small muted">Sin agua indicada.</p>}
             <StepList steps={data.recipe.steps} />
           </div>
           <button type="button" className="primary block" disabled={saving} onClick={save}>

@@ -26,6 +26,7 @@ Guardo mis recetas en una app propia (BaristApp). Cada vez que me des una receta
     "waterTempC": 93,
     "filter": "Hario blanco",
     "accessories": "Hervidor cuello de cisne, báscula Hario",
+    "water": { "name": "Fuente Dehesa", "tds": null, "gh": null, "kh": null, "notes": "Mineralización débil; sin mezclar" },
     "targetTime": { "min": "2:15", "max": "2:50" },
     "steps": [
       { "at": "0:00", "action": "pour", "addGrams": 35, "totalGrams": 35, "endsAt": "0:10", "pourType": "suave, circular", "instruction": "Humedece todo el café y haz un pequeño giro del dripper." },
@@ -49,6 +50,7 @@ Reglas del bloque:
 - Tiempos como "m:ss" desde el inicio de la preparación. `endsAt` es cuándo debe terminar ese paso.
 - `addGrams` es el agua añadida en ese paso y `totalGrams` el acumulado en la báscula al terminarlo. Omítelos en pasos sin agua.
 - Gramos y grados como números, sin unidades. Usa `null` para los datos que no conozcas: no los inventes.
+- `water`: el agua que debo usar en esta receta. `name` es la marca o el tipo (por ejemplo «Fuente Dehesa», «grifo filtrado», «Fuente Dehesa + destilada 1:1»). `tds` es el residuo seco o TDS en mg/L; `gh` y `kh` son la dureza total y la alcalinidad en ppm como CaCO3. Pon esos valores solo si los conoces de la etiqueta o de una medición; si no, `null`. En `notes` explica cualquier mezcla o tratamiento, o por qué recomiendas esa agua para este café.
 - `roastDate` en formato YYYY-MM-DD o `null`.
 - `bagGrams`: peso neto de la bolsa en gramos si lo conoces (por ejemplo, de la foto); si no, `null`.
 - Usa siempre el mismo `name` y `roaster` para el mismo café, para que la app lo agrupe.

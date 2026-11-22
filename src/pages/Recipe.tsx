@@ -5,6 +5,7 @@ import { METHOD_LABELS } from '../lib/types';
 import { payloadToJson, recipeText, toImportPayload } from '../lib/summary';
 import { RecipeParams, StepList } from '../components/RecipeBits';
 import { ShareText } from '../components/ShareText';
+import { WaterCard } from '../components/WaterBits';
 import { BrewRow } from './History';
 
 export default function RecipePage() {
@@ -29,6 +30,7 @@ export default function RecipePage() {
       </div>
       <RecipeParams r={recipe} />
       {recipe.accessories && <p className="small muted">Accesorios: {recipe.accessories}</p>}
+      <WaterCard water={recipe.water} onSave={async (water) => void (await db.recipes.update(id, { water }))} />
 
       <Link to={`/receta/${id}/preparar`} className="btn primary block" style={{ margin: '8px 0 4px' }}>▶ Preparar</Link>
       <Link to={`/receta/${id}/registrar`} className="btn block" style={{ marginBottom: 8 }}>Registrar sin cronómetro</Link>

@@ -1,5 +1,5 @@
 import type { ImportPayload } from './schema';
-import { METHOD_LABELS, type Brew, type Coffee, type Recipe, type Step } from './types';
+import { METHOD_LABELS, type Brew, type Coffee, type Recipe, type Step, type Water } from './types';
 import { daysSince, formatNum, formatRatio, formatTime } from './time';
 import { remainingGrams } from './stock';
 
@@ -20,6 +20,16 @@ export function coffeeText(c: Coffee, now = new Date(), remaining?: number): str
     ...line('Existencias', remaining !== undefined ? `≈ ${formatNum(Math.max(0, remaining))} g` : undefined),
     ...(c.inStock ? [] : ['- Sin existencias']),
   ].join('\n');
+}
+
+/** «Fuente Dehesa (TDS 50 mg/L · GH 20 · KH 15) — notas» */
+export function waterText(w: Water): string {
+  const minerals = [
+    w.tds !== undefined && `TDS ${formatNum(w.tds)} mg/L`,
+    w.gh !== undefined && `GH ${formatNum(w.gh)}`,
+    w.kh !== undefined && `KH ${formatNum(w.kh)}`,
+  ].filter(Boolean);
+  return `${w.name}${minerals.length ? ` (${minerals.join(' · ')})` : ''}${w.notes ? ` — ${w.notes}` : ''}`;
 }
 
 export function stepText(s: Step): string {
@@ -45,6 +55,7 @@ export function recipeText(r: Recipe): string {
     ...line('Temperatura', r.waterTempC !== undefined ? `${r.waterTempC} °C` : undefined),
     ...line('Filtro', r.filter),
     ...line('Accesorios', r.accessories),
+    ...line('Agua', r.water && waterText(r.water)),
     ...line('Tiempo objetivo', target),
     '- Pasos:',
     ...r.steps.map((s) => `  - ${stepText(s)}`),
@@ -59,6 +70,7 @@ export function brewText(b: Brew, r?: Recipe): string {
     if (b.waterGrams !== r.waterGrams) diffs.push(`agua ${formatNum(b.waterGrams)} g (receta ${formatNum(r.waterGrams)} g)`);
     if (b.grindClicks !== r.grindClicks) diffs.push(`molienda ${b.grindClicks ?? '?'} clics (receta ${r.grindClicks ?? '?'})`);
     if (b.waterTempC !== r.waterTempC) diffs.push(`temperatura ${b.waterTempC ?? '?'} °C (receta ${r.waterTempC ?? '?'})`);
+    if (b.water && b.water !== r.water?.name) diffs.push(`agua ${b.water} (receta ${r.water?.name ?? 'sin indicar'})`);
   }
   return [
     `- ${b.date.slice(0, 10)}${r ? ` · ${r.name}` : ''}${b.rating ? ` · ${b.rating}/5` : ''}`,
@@ -139,6 +151,7 @@ export function toImportPayload(c: Coffee, r: Recipe): ImportPayload {
       waterTempC: r.waterTempC,
       filter: r.filter,
       accessories: r.accessories,
+      water: r.water,
       targetTime:
         r.targetTimeMin !== undefined && r.targetTimeMax !== undefined
           ? { min: r.targetTimeMin, max: r.targetTimeMax }
